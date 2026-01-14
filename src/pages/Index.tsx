@@ -2,17 +2,15 @@ import { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Slider } from '@/components/ui/slider';
 import Icon from '@/components/ui/icon';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import * as api from '@/lib/api';
 import { getTelegramWebApp, getTelegramUser, getReferralCode, hapticFeedback, notificationFeedback, openTelegramLink } from '@/lib/telegram';
+import DashboardTab from '@/components/DashboardTab';
+import PortfolioTab from '@/components/PortfolioTab';
+import WalletTab from '@/components/WalletTab';
+import ReferralTab from '@/components/ReferralTab';
+import Dialogs from '@/components/Dialogs';
 
 export default function Index() {
   const { toast } = useToast();
@@ -33,8 +31,6 @@ export default function Index() {
   const [adminPending, setAdminPending] = useState<api.Transaction[]>([]);
 
   const dailyRate = 10.6;
-  const calculatedDaily = (calcAmount[0] * dailyRate) / 100;
-  const calculatedMonthly = calculatedDaily * 30;
 
   useEffect(() => {
     const webApp = getTelegramWebApp();
@@ -281,376 +277,71 @@ export default function Index() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="dashboard" className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <Card className="p-4 bg-card border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon name="TrendingUp" size={18} className="text-success" />
-                    <p className="text-xs text-muted-foreground">Заработано</p>
-                  </div>
-                  <p className="text-xl font-bold">{totalEarned.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</p>
-                </Card>
-                <Card className="p-4 bg-card border-border">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Icon name="Users" size={18} className="text-primary" />
-                    <p className="text-xs text-muted-foreground">Партнёров</p>
-                  </div>
-                  <p className="text-xl font-bold">{user.referral_count}</p>
-                </Card>
-              </div>
-
-              <div className="flex gap-3">
-                <Button className="flex-1 bg-primary hover:bg-primary/90" onClick={() => setShowDepositDialog(true)}>
-                  <Icon name="Plus" size={18} className="mr-2" />
-                  Пополнить
-                </Button>
-                <Button className="flex-1 bg-secondary hover:bg-secondary/90" onClick={openForum}>
-                  <Icon name="MessageCircle" size={18} className="mr-2" />
-                  Форум
-                </Button>
-              </div>
-
-              <Card className="p-4 bg-card border-border">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold">История операций</h3>
-                  <Button variant="ghost" size="sm" onClick={refreshData}>
-                    <Icon name="RefreshCw" size={16} />
-                  </Button>
-                </div>
-                <div className="space-y-3">
-                  {transactions.slice(0, 10).map(tx => (
-                    <div key={tx.id} className="flex items-center justify-between p-3 bg-muted rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className={`p-2 rounded-full ${
-                          tx.type === 'deposit' ? 'bg-primary/20' :
-                          tx.type === 'profit' ? 'bg-success/20' :
-                          tx.type === 'withdraw' ? 'bg-secondary/20' :
-                          tx.type === 'bonus' ? 'bg-primary/20' :
-                          'bg-primary/20'
-                        }`}>
-                          <Icon 
-                            name={
-                              tx.type === 'deposit' ? 'ArrowDown' :
-                              tx.type === 'profit' ? 'TrendingUp' :
-                              tx.type === 'withdraw' ? 'ArrowUp' :
-                              tx.type === 'bonus' ? 'Gift' :
-                              'Users'
-                            } 
-                            size={16} 
-                            className={
-                              tx.type === 'deposit' ? 'text-primary' :
-                              tx.type === 'profit' ? 'text-success' :
-                              tx.type === 'withdraw' ? 'text-secondary' :
-                              tx.type === 'bonus' ? 'text-primary' :
-                              'text-primary'
-                            }
-                          />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{tx.description || tx.type}</p>
-                          <p className="text-xs text-muted-foreground">{new Date(tx.created_at).toLocaleString('ru-RU')}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-semibold ${
-                          tx.type === 'withdraw' ? 'text-secondary' : 'text-success'
-                        }`}>
-                          {tx.type === 'withdraw' ? '-' : '+'}{parseFloat(tx.amount).toLocaleString('ru-RU')} ₽
-                        </p>
-                        <Badge variant={tx.status === 'completed' ? 'default' : tx.status === 'pending' ? 'secondary' : 'destructive'} className="text-xs">
-                          {tx.status === 'completed' ? 'Выполнено' : tx.status === 'pending' ? 'Ожидание' : 'Отклонено'}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {transactions.length === 0 && (
-                    <p className="text-center text-muted-foreground text-sm py-4">Нет транзакций</p>
-                  )}
-                </div>
-              </Card>
+            <TabsContent value="dashboard">
+              <DashboardTab 
+                user={user}
+                totalEarned={totalEarned}
+                transactions={transactions}
+                onDepositClick={() => setShowDepositDialog(true)}
+                onForumClick={openForum}
+                onRefresh={refreshData}
+              />
             </TabsContent>
 
-            <TabsContent value="portfolio" className="space-y-4">
-              <Card className="p-4 bg-gradient-to-br from-primary to-secondary text-white">
-                <p className="text-sm opacity-90 mb-1">Активные вклады</p>
-                <h3 className="text-3xl font-bold mb-3">{activeDeposits.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</h3>
-                <div className="flex items-center justify-between text-sm">
-                  <span>Суточный доход</span>
-                  <span className="font-semibold">{dailyIncome.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
-                </div>
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="font-semibold mb-4">Калькулятор доходности</h3>
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm mb-2 block">Сумма инвестиции</Label>
-                    <Slider 
-                      value={calcAmount}
-                      onValueChange={setCalcAmount}
-                      min={1000}
-                      max={100000}
-                      step={1000}
-                      className="mb-2"
-                    />
-                    <p className="text-2xl font-bold text-center text-primary">{calcAmount[0].toLocaleString('ru-RU')} ₽</p>
-                  </div>
-                  <div className="bg-muted p-4 rounded-lg space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Ежедневно ({dailyRate}%)</span>
-                      <span className="font-semibold text-success">{calculatedDaily.toFixed(2)} ₽</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm text-muted-foreground">Ежемесячно</span>
-                      <span className="font-semibold text-success">{calculatedMonthly.toFixed(2)} ₽</span>
-                    </div>
-                  </div>
-                </div>
-              </Card>
+            <TabsContent value="portfolio">
+              <PortfolioTab 
+                activeDeposits={activeDeposits}
+                dailyIncome={dailyIncome}
+                dailyRate={dailyRate}
+                calcAmount={calcAmount}
+                onCalcAmountChange={setCalcAmount}
+              />
             </TabsContent>
 
-            <TabsContent value="wallet" className="space-y-4">
-              <Card className="p-6 bg-card border-border">
-                <p className="text-sm text-muted-foreground mb-1">Доступно для вывода</p>
-                <h3 className="text-3xl font-bold mb-4">{balance.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</h3>
-                <div className="flex gap-3">
-                  <Button className="flex-1 bg-success hover:bg-success/90" onClick={() => setShowDepositDialog(true)}>
-                    <Icon name="Plus" size={18} className="mr-2" />
-                    Пополнить
-                  </Button>
-                  <Button className="flex-1 bg-secondary hover:bg-secondary/90" onClick={() => setShowWithdrawDialog(true)}>
-                    <Icon name="ArrowUpRight" size={18} className="mr-2" />
-                    Вывести
-                  </Button>
-                </div>
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="font-semibold mb-4">Финансовая статистика</h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Активные депозиты</span>
-                    <span className="font-semibold text-success">{activeDeposits.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Всего заработано</span>
-                    <span className="font-semibold text-success">{totalEarned.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-muted rounded-lg">
-                    <span className="text-sm text-muted-foreground">Текущий баланс</span>
-                    <span className="font-semibold">{balance.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</span>
-                  </div>
-                </div>
-              </Card>
+            <TabsContent value="wallet">
+              <WalletTab 
+                balance={balance}
+                activeDeposits={activeDeposits}
+                totalEarned={totalEarned}
+                onDepositClick={() => setShowDepositDialog(true)}
+                onWithdrawClick={() => setShowWithdrawDialog(true)}
+              />
             </TabsContent>
 
-            <TabsContent value="referral" className="space-y-4">
-              <Card className="p-4 bg-gradient-to-br from-primary to-secondary text-white">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm opacity-90">Ваш доход</p>
-                    <h3 className="text-2xl font-bold">{parseFloat(user.referral_earnings || '0').toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</h3>
-                  </div>
-                  <div className="bg-white/20 p-3 rounded-full">
-                    <Icon name="Users" size={24} />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mt-4">
-                  <div>
-                    <p className="text-xs opacity-80">Всего рефералов</p>
-                    <p className="text-xl font-bold">{user.referral_count}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs opacity-80">Активных</p>
-                    <p className="text-xl font-bold">{referrals.filter(r => parseFloat(r.total_deposits) > 0).length}</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="font-semibold mb-3">Реферальная ссылка</h3>
-                <div className="bg-muted p-3 rounded-lg mb-3">
-                  <p className="text-xs text-muted-foreground break-all">t.me/your_bot?start=ref_{user.telegram_id}</p>
-                </div>
-                <Button className="w-full bg-primary hover:bg-primary/90" onClick={copyReferralLink}>
-                  <Icon name="Share2" size={18} className="mr-2" />
-                  Пригласить друзей
-                </Button>
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="font-semibold mb-3">Бонусы</h3>
-                <div className="space-y-3">
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Вступить в чат</span>
-                      <Badge className="bg-success">+100 ₽</Badge>
-                    </div>
-                    <Button 
-                      size="sm" 
-                      className="w-full bg-secondary hover:bg-secondary/90"
-                      onClick={handleChatBonus}
-                      disabled={user.chat_bonus_claimed}
-                    >
-                      {user.chat_bonus_claimed ? 'Получено' : 'Проверить'}
-                    </Button>
-                  </div>
-                  <div className="p-3 bg-muted rounded-lg">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">Пригласить 25 друзей</span>
-                      <Badge className="bg-success">+2000 ₽</Badge>
-                    </div>
-                    <Progress value={(user.referral_count / 25) * 100} className="h-2 mb-2" />
-                    <p className="text-xs text-center text-muted-foreground">{user.referral_count}/25</p>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4 bg-card border-border">
-                <h3 className="font-semibold mb-3">Ваши партнёры</h3>
-                <div className="space-y-2">
-                  {referrals.map(ref => (
-                    <div key={ref.telegram_id} className="p-3 bg-muted rounded-lg">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="text-sm font-medium">{ref.first_name || ref.username || `ID ${ref.telegram_id}`}</span>
-                        <span className="text-sm text-success font-semibold">+{parseFloat(ref.bonus_earned).toLocaleString('ru-RU')} ₽</span>
-                      </div>
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Депозит: {parseFloat(ref.total_deposits).toLocaleString('ru-RU')} ₽</span>
-                        <span>{new Date(ref.created_at).toLocaleDateString('ru-RU')}</span>
-                      </div>
-                    </div>
-                  ))}
-                  {referrals.length === 0 && (
-                    <p className="text-center text-muted-foreground text-sm py-4">Пока нет партнёров</p>
-                  )}
-                </div>
-              </Card>
+            <TabsContent value="referral">
+              <ReferralTab 
+                user={user}
+                referrals={referrals}
+                onCopyLink={copyReferralLink}
+                onChatBonus={handleChatBonus}
+              />
             </TabsContent>
           </Tabs>
         </div>
       </div>
 
-      <Dialog open={showDepositDialog} onOpenChange={setShowDepositDialog}>
-        <DialogContent className="bg-card">
-          <DialogHeader>
-            <DialogTitle>Пополнение баланса</DialogTitle>
-            <DialogDescription>Минимальная сумма: 100 ₽</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Сумма пополнения</Label>
-              <Input 
-                type="number" 
-                placeholder="1000" 
-                value={depositAmount}
-                onChange={(e) => setDepositAmount(e.target.value)}
-                className="bg-muted border-border"
-              />
-            </div>
-            <div>
-              <Label>Валюта</Label>
-              <Select value={currency} onValueChange={setCurrency}>
-                <SelectTrigger className="bg-muted border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="RUB">RUB (Рубли)</SelectItem>
-                  <SelectItem value="USDT">USDT</SelectItem>
-                  <SelectItem value="TON">TON</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Card className="p-4 bg-muted border-border">
-              <p className="text-sm text-muted-foreground mb-2">Номер карты для перевода:</p>
-              <p className="font-mono font-semibold">2200 7007 1234 5678</p>
-            </Card>
-            <Button className="w-full bg-success hover:bg-success/90" onClick={handleDeposit}>
-              <Icon name="Check" size={18} className="mr-2" />
-              Проверить оплату
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showWithdrawDialog} onOpenChange={setShowWithdrawDialog}>
-        <DialogContent className="bg-card">
-          <DialogHeader>
-            <DialogTitle>Вывод средств</DialogTitle>
-            <DialogDescription>Минимальная сумма: 100 ₽</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Доступно для вывода</Label>
-              <p className="text-2xl font-bold text-success">{balance.toLocaleString('ru-RU', {minimumFractionDigits: 2})} ₽</p>
-            </div>
-            <div>
-              <Label>Сумма вывода</Label>
-              <Input 
-                type="number" 
-                placeholder="1000" 
-                value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(e.target.value)}
-                className="bg-muted border-border"
-              />
-            </div>
-            <div>
-              <Label>Номер карты для получения</Label>
-              <Input 
-                type="text" 
-                placeholder="2200 0000 0000 0000" 
-                value={withdrawCard}
-                onChange={(e) => setWithdrawCard(e.target.value)}
-                className="bg-muted border-border"
-              />
-            </div>
-            <Button className="w-full bg-secondary hover:bg-secondary/90" onClick={handleWithdraw}>
-              <Icon name="ArrowUpRight" size={18} className="mr-2" />
-              Подать заявку на вывод
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showAdminDialog} onOpenChange={setShowAdminDialog}>
-        <DialogContent className="bg-card max-w-2xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Админ-панель</DialogTitle>
-            <DialogDescription>Управление заявками пользователей</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            {adminPending.map(tx => (
-              <Card key={tx.id} className="p-4 bg-muted">
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <p className="font-semibold">{tx.type === 'deposit' ? 'Пополнение' : 'Вывод'}</p>
-                    <p className="text-sm text-muted-foreground">ID транзакции: {tx.id}</p>
-                  </div>
-                  <Badge>{tx.status}</Badge>
-                </div>
-                <div className="space-y-1 text-sm mb-3">
-                  <p>Сумма: <span className="font-semibold">{parseFloat(tx.amount).toLocaleString('ru-RU')} {tx.currency || 'RUB'}</span></p>
-                  {tx.card_number && <p>Карта: {tx.card_number}</p>}
-                  <p className="text-muted-foreground">{new Date(tx.created_at).toLocaleString('ru-RU')}</p>
-                </div>
-                <div className="flex gap-2">
-                  <Button className="flex-1 bg-success hover:bg-success/90" onClick={() => handleApprove(tx.id)}>
-                    <Icon name="Check" size={16} className="mr-1" />
-                    Одобрить
-                  </Button>
-                  <Button className="flex-1 bg-destructive hover:bg-destructive/90" onClick={() => handleReject(tx.id)}>
-                    <Icon name="X" size={16} className="mr-1" />
-                    Отклонить
-                  </Button>
-                </div>
-              </Card>
-            ))}
-            {adminPending.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">Нет заявок на рассмотрении</p>
-            )}
-          </div>
-        </DialogContent>
-      </Dialog>
+      <Dialogs 
+        showDepositDialog={showDepositDialog}
+        showWithdrawDialog={showWithdrawDialog}
+        showAdminDialog={showAdminDialog}
+        depositAmount={depositAmount}
+        withdrawAmount={withdrawAmount}
+        withdrawCard={withdrawCard}
+        currency={currency}
+        balance={balance}
+        adminPending={adminPending}
+        onDepositDialogChange={setShowDepositDialog}
+        onWithdrawDialogChange={setShowWithdrawDialog}
+        onAdminDialogChange={setShowAdminDialog}
+        onDepositAmountChange={setDepositAmount}
+        onWithdrawAmountChange={setWithdrawAmount}
+        onWithdrawCardChange={setWithdrawCard}
+        onCurrencyChange={setCurrency}
+        onDeposit={handleDeposit}
+        onWithdraw={handleWithdraw}
+        onApprove={handleApprove}
+        onReject={handleReject}
+      />
     </div>
   );
 }
